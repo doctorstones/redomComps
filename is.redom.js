@@ -172,7 +172,8 @@ class ButtonGroup {
     /**
      * 
      * Esempio JS:
-     * dom.segment = new ButtonGroup('segment',[{caption:'Lista',class:'btn btn-outline-secondary',onclick:'showPage'},{caption:'Calendario',class:'btn btn-outline-secondary',onclick:'showPage'}],{context:me}),     * 
+     * dom.segment = new ButtonGroup('segment',[{caption:'Lista',class:'btn btn-outline-secondary',onclick:'showPage'},
+     * {caption:'Calendario',class:'btn btn-outline-secondary',onclick:'showPage'}],{context:me}),     * 
      * 
      * 
      * @param {*} groupId 
@@ -235,6 +236,23 @@ class ButtonToolbar {
     }
 }
 
+class LabelValue {
+
+    constructor(props = null) {
+
+        if (!props) props = {};
+        if (!props.id) props.id = '';
+        if (!props.containerClass) props.containerClass = 'form-group';
+        if (!props.labelClass) props.labelClass = '';
+
+        this.el = el('', { class: props.containerClass },
+            this.label = el('label.label', { innerHTML: props.label, class: props.labelClass }),
+            this.input = el('label.value#' + props.id, { innerHTML: props.value, ...props }));
+
+    }
+
+}
+
 class ImageEl {
     constructor(path) {
         this.el = el("img", { src: path });
@@ -286,6 +304,11 @@ Todo: Binding su Portlet
         this.el = el('.form-group', { class: props.containerClass },
             this.label = el('label', { textContent: props.label, for: inputId, class: props.labelClass }),
             this.input = el('input#' + inputId + '.form-control', props));
+
+        this.input.oninput = evt => {
+            const event = new CustomEvent("input", { detail: { el: this.el, obj: this, data: this.data } });
+            document.dispatchEvent(event);
+        }
 
         this.input.onfocus = evt => {
             const event = new CustomEvent("inputfocus", { detail: { el: this.el, obj: this, data: this.data } });
@@ -467,6 +490,16 @@ class InputCheckList extends Input {
         return this._value;
     }
 
+    toArray() {
+        // console.log('list', this.options.views);
+        let result = [];
+        for (let i = 0; i < this.options.views.length; i++) {
+            let row = this.options.views[i];
+            result.push({ checked: row.checked, id: row.input.name || row.input.id, value: row.input.value });
+        }
+        return result;
+    }
+
 }
 
 class InputTextArea extends Input {
@@ -583,6 +616,15 @@ class InputSelect extends Input {
         this.options.update(dati);
     }
 
+    get rawvalue() {
+        console.log('rawvalue options', this.options.views)
+        for (let i = 0; i < this.options.views.length; i++) {
+            if (this.options.views[i].el.selected) return this.options.views[i].data;
+        }
+        return null;
+    }
+
+
 }
 
 class __InputSelectOption {
@@ -592,11 +634,13 @@ class __InputSelectOption {
     */
     constructor() {
         this.el = el('option');
+        this.data = null;
     }
     update(data, index, items, context) {
-
+        this.data = data;
         this.el.value = data.value;
         this.el.textContent = data.textContent || data.text || data.caption || data.value;
+        if (data.disabled) this.el.disabled = data.disabled;
         if (data.selected) this.el.selected = data.selected;
 
     }
